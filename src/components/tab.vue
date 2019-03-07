@@ -6,14 +6,10 @@
     :options="options"
     @change="handleChange">
   </LyTab>
-  <!-- <h3>请选择移动端调试模式或者真机调试</h3>
-
-    <h1>滑动模块</h1>     
-  <slider :valueFun="valueFun" :min="0" :max="0"></slider> -->
   <div class="container"  ref="container">
     <div class="content">
       <ul>
-        <li v-for="(item, index) in list" :key="index">{{item.name}}</li> 
+        <li v-for="(item, index) in list" :key="index" v-html="item.name"></li> 
       </ul>
       <div class="loading" v-show="loading">{{loadingTXT}}</div>
     </div>
@@ -51,6 +47,7 @@ export default {
       loading:false,
       loadingTXT:"loading....",
       page:0,
+      isClickTab:false,
     }
   },
   components:{
@@ -58,47 +55,52 @@ export default {
   },
   created(){
     this.createEl();
-    // this.$refs.container.ontouchmvoe = (e)=>{
-    //   console.log(e);
-
-    // };
-    this.loadMore();
+  },
+  mounted(){
+    this.loadMore();    
   },
   methods: {
-    handleChange (item, index) {
-      console.log(item, index)
+    async handleChange (item, index) {
+      this.isClickTab = true;
+      this.scroll.refresh();
+      this.scroll.maxScrollY = -300;
+      this.loadingTXT = "loading....";
       this.tabItemName = item.label;
       this.list = [];
       this.page = 0;
-      this.createEl();
+      await this.createEl();
+      this.loadMore();
     },
     createEl(){
       //异步请求数据代码可以写在此处
       let txt,arr=[];
-      for(let i=0;i<26;i++){
-        txt = {name:this.tabItemName+"-让我们荡起双江-"+i}
-        this.list.push(txt);
+      for(let i=0;i<10;i++){
+        txt = {name:"<p>"+this.tabItemName+"一起开心撸代码</p><p>——页数："+this.page+"</p>"}
+        arr.push(txt)
       }
+      Array.prototype.push.apply(this.list,arr);
     },
     loadMore(){
       this.$nextTick(() => {
         if (!this.scroll) {
-          console.log("loading....");
-            this.scroll = new BScroll(this.$refs.container, {click:true,probeType:3,useTransition:false,scrollY:true,bindToWrapper:true});
+            this.scroll = new BScroll(this.$refs.container, {click:true,probeType:3,useTransition:false,scrollY:true,bindToWrapper:true,HWCompositing: true});
             this.scroll.maxScrollY = -300;
             this.scroll.on('scrollEnd', (pos) => {
               this.loading = true;
-              console.log("pos"+JSON.stringify(pos)+this.scroll.y+this.scroll.maxScrollY);
-              if(this.page>3){
+              if(this.isClickTab){
+                this.scroll.maxScrollY = -300;
+              }
+              this.isClickTab = false;
+              if(this.page>5){
                 this.loadingTXT = "到底了---"
                 this.loading = true;
                 return ;
               }
               if(this.scroll.y <= (this.scroll.maxScrollY + 50)&&this.loading) {                 
                   console.log("滚动加载数据");
+                  this.page++;    
                   this.createEl();     
                   this.loading = false;
-                  this.page++;     
               }
             })
           } else {
@@ -116,15 +118,19 @@ export default {
 .demo{
   width: 100vw;
   height: 100vh;
-  padding-top: 40px;
   .container{
     width: 100vw;
     height: 100vh;
     overflow: hidden;
     .content{
       width: 100vw;
-      padding-bottom: 40px;
+      padding-bottom: 50px;
       overflow: hidden;
+      ul{
+        li{
+          font-size: 30px;
+        }
+      }
     }
   }
 }
